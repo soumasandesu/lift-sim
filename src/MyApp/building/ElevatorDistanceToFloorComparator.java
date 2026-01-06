@@ -63,6 +63,9 @@ class ElevatorStatusDistanceToFloorComparator implements Comparator<ElevatorStat
         if (resultVelocity != 0)
             return resultVelocity;
 
-        return 0;
+        // Tie-breaker: if all conditions are equal (e.g., all elevators at same floor),
+        // use elevator ID to ensure stable, deterministic sorting
+        // This prevents "random" assignment when multiple elevators have identical status
+        return Integer.compare(o1.getElevator().getElevatorId(), o2.getElevator().getElevatorId());
     }
 }
