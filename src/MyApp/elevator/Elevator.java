@@ -19,6 +19,18 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
      */
     public static int elevatorCount = 0;
 
+    /**
+     * Tolerance for determining if elevator is docked at a floor (in meters).
+     * Used for checking if elevator position matches floor position within acceptable range.
+     */
+    private static final double DOCKING_TOLERANCE_METERS = 0.05;
+
+    /**
+     * Time required for elevator door to open and close (in milliseconds).
+     * Based on typical elevator door operation time.
+     */
+    private static final long DOOR_OPERATION_TIME_MS = 5000;
+
     private final int elevatorId;
     /**
      * Default setting in config file. Assume each floor has 4m
@@ -82,6 +94,12 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
      * Indicates which direction of traffic this Elevator is serving and will serve first.
      */
     private int servingDirection = 0;
+
+    /**
+     * Timestamp when door operation started (opening/closing).
+     * null if door is not operating.
+     */
+    private Long doorOperationStartTime = null;
 
     /**
      * Creates an {@code Elevator} instance.
@@ -179,6 +197,17 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
      * @throws InterruptedException If this thread is interrupted by any other threads that needs it to be terminated.
      */
     private void simulate(final long elapseMillSec) throws InterruptedException {
+        // Check if door is operating
+        if (doorOperationStartTime != null) {
+            final long elapsed = System.currentTimeMillis() - doorOperationStartTime;
+            if (elapsed >= DOOR_OPERATION_TIME_MS) {
+                doorOperationStartTime = null; // Door operation complete
+                log.info(String.format("elevator %d: door operation complete", this.getElevatorId()));
+            } else {
+                // Door still operating, skip physics simulation
+                return;
+            }
+        }
 
         // set this elevator may serve any direction if both jobs are done
         // switch direction if same direction has no jobs to work on
@@ -222,7 +251,7 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
 
             // brake?
 //            log.info(String.format("??? %.3f >= %.3f ???", yPosition, targetYPos - brakeDistance));
-            if (servingDirection * whatYPosWillBeIfNotBrake >= servingDirection * (targetYPos - servingDirection * (brakeDistance + 0.05))) {
+            if (servingDirection * whatYPosWillBeIfNotBrake >= servingDirection * (targetYPos - servingDirection * (brakeDistance + DOCKING_TOLERANCE_METERS))) {
                 log.info("should brake");
                 accelerationRate = servingDirection * -maxAccelerationRate;
             }
@@ -244,13 +273,14 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
         this.yPosition += speed * elapseMillSec / 1000 + 0.5 * (accelerationRate) * Math.pow(elapseMillSec / 1000, 2);
 
         // if this lift is stable then it must reached the target, remove one
-        if (speed == 0) {
+        if (speed == 0 && doorOperationStartTime == null) {
             this.yPosition = targetYPos;
             queue.remove(getFloorIndex(target));
             missionQueue.remove(0);
 
-            // simulation of time to open the door
-            Thread.sleep(5000);
+            // Start door operation (non-blocking)
+            doorOperationStartTime = System.currentTimeMillis();
+            log.info(String.format("elevator %d: arrived at floor, opening door", this.getElevatorId()));
         }
 
         // output elevator physics info
@@ -263,7 +293,7 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
      * Called by the {@code Thread} class to simulate every elapse of running this elevator.
      */
     public void run() {
-        while (true) {
+        while (!Thread.currentThread().isInterrupted()) {
             final int timerID = Timer.setTimer(id, updateWaitDuration);
             final Msg msg = mbox.receive();
 
@@ -273,11 +303,13 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
             try {
                 simulate(updateWaitDuration);
             } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
                 System.out.println("Elevator interrupted, terminating.");
+                break;
             }
         }
         System.out.println(id + ": Terminating This Lift!");
-        System.exit(0);
+        // Thread will terminate naturally, no need for System.exit(0)
     }
 
     /**

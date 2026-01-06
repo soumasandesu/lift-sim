@@ -34,6 +34,11 @@ public class Building {
      */
     private static final String cfgFName = "etc/MyApp.cfg";
     /**
+     * Tolerance for determining if elevator is docked at a floor (in meters).
+     * Must match Elevator.DOCKING_TOLERANCE_METERS.
+     */
+    private static final double DOCKING_TOLERANCE_METERS = 0.05;
+    /**
      * Indicates the total meters that an Elevator may move vertically for.
      */
     private final int totalDisplacementMeters;
@@ -438,7 +443,7 @@ public class Building {
             final double elevYPos = e.getStatus().getYPosition();
             final double floorYPos = floor.getYPosition();
 
-            if (elevYPos < floorYPos - 0.05 || elevYPos > floorYPos + 0.05)
+            if (elevYPos < floorYPos - DOCKING_TOLERANCE_METERS || elevYPos > floorYPos + DOCKING_TOLERANCE_METERS)
                 continue;
             elevators.add(e);
         }

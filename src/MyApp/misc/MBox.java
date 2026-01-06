@@ -15,6 +15,19 @@ public class MBox {
     private final String id;
     private final Logger log;
     private final ArrayList<Msg> mqueue = new ArrayList<>();
+    
+    /**
+     * Message counter for implementing wait/notify pattern.
+     * This design uses a single counter to track both messages and waiting threads:
+     * <ul>
+     *   <li>Positive values: number of messages available in queue</li>
+     *   <li>Zero: queue is empty but no thread is currently waiting</li>
+     *   <li>Negative values: number of threads waiting for messages (absolute value)</li>
+     * </ul>
+     * This elegant design allows efficient synchronization without separate condition variables.
+     * When a thread calls receive() and queue is empty, it decrements msgCnt (making it negative)
+     * and waits. When send() is called, it increments msgCnt and notifies waiting threads.
+     */
     private int msgCnt = 0;
 
     //------------------------------------------------------------
