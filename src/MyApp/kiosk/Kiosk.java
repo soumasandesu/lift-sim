@@ -7,7 +7,6 @@ import MyApp.misc.*;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.logging.Level;
 
 import MyApp.building.Building;
 
@@ -61,10 +60,10 @@ public class Kiosk extends AppThread implements Comparable<Kiosk> {
         }
 
         if (assignedTo == null) {
-            log.info(String.format("cannot assign for target %s", target));
+            log.info("cannot assign for target {}", target);
             kioskUpdate = "Assigne not successful.";
         } else {
-            log.info(String.format("Floor \"%s\" request assigned to elevator %d", target, assignedTo.getElevatorId()));
+            log.info("Floor \"{}\" request assigned to elevator {}", target, assignedTo.getElevatorId());
             putNewElevatorDestination(assignedTo, building.getFloorPosition(target));
             kioskUpdate = "Floor " + target + " request assigned to elevator " + assignedTo.getID();
         }
@@ -93,7 +92,7 @@ public class Kiosk extends AppThread implements Comparable<Kiosk> {
      */
     protected void readKeypad(final String destFloor) {
         if(Arrays.asList(floorList).contains(destFloor)){
-        	building.getLogger().log(Level.INFO, String.format("read keypad, nfc id = %s, dest = %s", id, destFloor));
+        	log.info("read keypad, nfc id = {}, dest = {}", id, destFloor);
         	addRequest(destFloor);//dummy
         }else{
         	kioskUpdate = "Wrong ID, Please try again.";
@@ -109,7 +108,7 @@ public class Kiosk extends AppThread implements Comparable<Kiosk> {
         final String destFloor = rfid.getFloorById(id);
       
         if(!"na".equals(destFloor)){
-        	building.getLogger().log(Level.INFO, String.format("read keypad, nfc id = %s, dest = %s", id, destFloor));
+        	log.info("read keypad, nfc id = {}, dest = {}", id, destFloor);
         	addRequest(destFloor);//dummy
         }else{
         	kioskUpdate = "Wrong ID, Please try again.";
@@ -120,7 +119,7 @@ public class Kiosk extends AppThread implements Comparable<Kiosk> {
      * 
      */
     protected void elevatorIn() {
-        building.getLogger().log(Level.INFO, "Floor " + floor.getName() + "Enter elevator arrived");
+        log.info("Floor {} Enter elevator arrived", floor.getName());
         kioskUpdate = "Elevator arrived";
         //TODO search if any elevator is arrived
         finishHopRequest();

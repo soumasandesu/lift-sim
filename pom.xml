@@ -19,6 +19,8 @@
         <maven.compiler.target>25</maven.compiler.target>
         <lombok.version>1.18.34</lombok.version>
         <junit.version>5.11.0</junit.version>
+        <slf4j.version>2.0.16</slf4j.version>
+        <logback.version>1.5.11</logback.version>
     </properties>
 
     <dependencies>
@@ -28,6 +30,20 @@
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
             <scope>provided</scope>
+        </dependency>
+
+        <!-- SLF4J API -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <!-- Logback implementation -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
         </dependency>
 
         <!-- JUnit 5 for testing -->

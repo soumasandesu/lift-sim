@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Console appender with custom pattern matching original LogFormatter -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyMMdd-HH:mm:ss} [%level] -- %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Root logger -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+    </root>
+
+    <!-- Fine-tune logging levels for specific packages -->
+    <logger name="MyApp.misc.MBox" level="DEBUG" />
+    <logger name="MyApp" level="INFO" />
+</configuration>
+

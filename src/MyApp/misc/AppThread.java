@@ -1,13 +1,14 @@
 package MyApp.misc;
 
 import MyApp.building.Building;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
-import java.util.logging.Logger;
 
 
 //======================================================================
 // AppThread
+@Slf4j
 public abstract class AppThread extends Thread {
 	/**
 	 * Represents that the identifier for such object in the building elevator and kiosk system.
@@ -18,7 +19,6 @@ public abstract class AppThread extends Thread {
      */
     protected final Building building;
     protected final MBox mbox;
-    protected final Logger log;
     protected final HashMap<Integer, String> queue;
 
     //------------------------------------------------------------
@@ -27,8 +27,7 @@ public abstract class AppThread extends Thread {
         super(id);
 		this.id = id;
 		this.building = building;
-		this.log = building.getLogger();
-		this.mbox = new MBox(id, this.log);
+		this.mbox = new MBox(id);
 		building.putThread(this);
 		this.queue = new HashMap<>();
     } // AppThread

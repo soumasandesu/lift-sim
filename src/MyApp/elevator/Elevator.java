@@ -202,7 +202,7 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
             final long elapsed = System.currentTimeMillis() - doorOperationStartTime;
             if (elapsed >= DOOR_OPERATION_TIME_MS) {
                 doorOperationStartTime = null; // Door operation complete
-                log.info(String.format("elevator %d: door operation complete", this.getElevatorId()));
+                log.info("elevator {}: door operation complete", this.getElevatorId());
             } else {
                 // Door still operating, skip physics simulation
                 return;
@@ -280,11 +280,15 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
 
             // Start door operation (non-blocking)
             doorOperationStartTime = System.currentTimeMillis();
-            log.info(String.format("elevator %d: arrived at floor, opening door", this.getElevatorId()));
+            log.info("elevator {}: arrived at floor, opening door", this.getElevatorId());
         }
 
         // output elevator physics info
-        log.info(String.format("elevator %d: height = %.2f m, %.2f m/s, %.2f m/s/s", this.getElevatorId(), this.yPosition, speed, accelerationRate));
+        log.info("elevator {}: height = {} m, {} m/s, {} m/s/s", 
+                this.getElevatorId(), 
+                String.format("%.2f", this.yPosition), 
+                String.format("%.2f", speed), 
+                String.format("%.2f", accelerationRate));
 
         lastCallSimulate = System.nanoTime();
     }

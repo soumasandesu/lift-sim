@@ -7,9 +7,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Logger;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -20,6 +17,7 @@ import MyApp.panel.AdminPanel;
 import MyApp.panel.ControlPanel;
 import MyApp.panel.Panel;
 import MyApp.timer.Timer;
+import lombok.extern.slf4j.Slf4j;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -27,6 +25,7 @@ import static java.util.stream.Collectors.toMap;
  * Simulates all functionality of startElevatorStatusCacheThread centralised controller inside startElevatorStatusCacheThread building. <br/>
  * This may be used as entry point for simulation.
  */
+@Slf4j
 public class Building {
     private static final int putStoppingHopMaxRetries = 100;
     /**
@@ -51,10 +50,6 @@ public class Building {
      * Stores all the statuses of all the Elevators inside this Building, as a cache.
      */
     private final ConcurrentHashMap<Elevator, ElevatorStatus> elevatorsStatuses;
-    /**
-     * Logging module for verbose, debugging and warning/error messages.
-     */
-    private final Logger log;
     /**
      * A hash table storing all created thread-object in this respective building, with its identifier as the key.
      */
@@ -148,14 +143,6 @@ public class Building {
             this.arefFloorPositions = new AtomicReference<>(floorPositions2);
         }
 
-        // get and configure logger
-        final ConsoleHandler conHd = new ConsoleHandler();
-        conHd.setFormatter(new LogFormatter());
-        final Logger logger = Logger.getLogger(Building.class.getName());
-        logger.setUseParentHandlers(false);
-        logger.addHandler(conHd);
-        logger.setLevel(Level.INFO);
-        this.log = logger;
         this.appThreads = new ConcurrentHashMap<>();
 
 //        kioskHoppingRequests = new ConcurrentHashMap<>();
@@ -209,7 +196,7 @@ public class Building {
 
         // Create elevator e0 = elevator 1, e1 = elevator 2 ......
         final int e = Integer.parseInt(this.getProperty("Elevators"));
-        getLogger().info(String.format("Elevators = %d", e));
+        log.info("Elevators = {}", e);
         for (int i = 0; i < e; i++) {
             final Elevator elevator = new Elevator("e" + i, this);
             elevator.start();
@@ -232,13 +219,9 @@ public class Building {
         this.subWnds.add(kioskPanel);
         kioskPanel.showInfo();
 
-        getLogger().info(
-                String.format("Threads (%d): %s",
-                        appThreads.size(),
-                        String.join(", ", appThreads.values().stream().map(AppThread::getID).sorted().collect(Collectors.toList())
-                        )
-                )
-        );
+        log.info("Threads ({}): {}", 
+                appThreads.size(),
+                String.join(", ", appThreads.values().stream().map(AppThread::getID).sorted().collect(Collectors.toList())));
     }
 
     /**
@@ -263,14 +246,6 @@ public class Building {
         this.threadBuildingRefreshElevatorStatusCache.start();
     }
 
-    /**
-     * Retrieves the Logger module for recording.
-     *
-     * @return The Logger moudle.
-     */
-    public Logger getLogger() {
-        return log;
-    }
 
     /**
      * Kiosk and elevator are appThread object. When they create, they will add into this method.<br/>

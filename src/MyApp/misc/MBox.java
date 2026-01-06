@@ -1,8 +1,8 @@
 package MyApp.misc;
 
-import java.util.logging.Logger;
 import java.util.ArrayList;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 // JavaSE6Tutorial/docs/CH15.md
 // 第 15 章 執行緒（Thread）
@@ -10,10 +10,9 @@ import lombok.AllArgsConstructor;
 
 // ======================================================================
 // MBox
-@AllArgsConstructor
+@Slf4j
 public class MBox {
     private final String id;
-    private final Logger log;
     private final ArrayList<Msg> mqueue = new ArrayList<>();
     
     /**
@@ -31,11 +30,17 @@ public class MBox {
     private int msgCnt = 0;
 
     //------------------------------------------------------------
+    // MBox
+    public MBox(final String id) {
+        this.id = id;
+    } // MBox
+
+    //------------------------------------------------------------
     // send
     public final synchronized void send(final Msg msg) {
 	msgCnt++;
 	mqueue.add(msg);
-	log.fine(id + ": send \"" + msg + "\"");
+	log.debug("{}: send \"{}\"", id, msg);
 	notify(); // see ln 44
     } // send
 
@@ -49,7 +54,7 @@ public class MBox {
 		    wait(); // see ln 34
 		    break;
 		} catch (final InterruptedException e) {
-		    log.warning(id + ".receive: InterruptedException");
+		    log.warn("{}.receive: InterruptedException", id);
 
 		    if (msgCnt >= 0)
 			break;		// msg arrived already
@@ -60,7 +65,7 @@ public class MBox {
 	}
 
 	final Msg msg = mqueue.remove(0);
-	log.fine(id + ": receiveing \"" + msg + "\"");
+	log.debug("{}: receiveing \"{}\"", id, msg);
 	return msg;
     } // receive
 } // MBox

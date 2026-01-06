@@ -194,10 +194,9 @@ public class Timer extends AppThread {
 
 	if (cancelTimer != null) {
 	    timerList.remove(cancelTimer);
-	    log.info(id+": "+caller+" cancelling timer: "+"["+timerID+"]");
+	    log.info("{}: {} cancelling timer: [{}]", id, caller, timerID);
 	} else {
-	    log.info(id+": "+caller+" cancelling timer: "+"["+timerID+"]"+
-		    " TIMER NOT FOUND!!");
+	    log.info("{}: {} cancelling timer: [{}] TIMER NOT FOUND!!", id, caller, timerID);
 	}
 
     } // cancel

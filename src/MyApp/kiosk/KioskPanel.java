@@ -22,13 +22,14 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.util.Arrays;
 import java.awt.event.ActionEvent;
-import java.util.logging.Level;
 import javax.swing.JTextField;
+import lombok.extern.slf4j.Slf4j;
 import javax.swing.SwingConstants;
 import javax.swing.Timer;
 
 import java.awt.Color;
 
+@Slf4j
 public class KioskPanel implements Panel{
 	private JFrame frmKoiskPanel;
 	private JTextField display;
@@ -203,7 +204,7 @@ public class KioskPanel implements Panel{
 		gbc_btnSubmit.gridy = 5;
 		btnSubmit.addActionListener(new ActionListener() {
 			  public void actionPerformed(ActionEvent e) { 
-				      building.getLogger().log(Level.INFO, FloorCbx.getSelectedItem().toString() + "'s koisk clicked submitFloor.");
+				      log.info("{}'s koisk clicked submitFloor.", FloorCbx.getSelectedItem().toString());
 					  kiosk.readKeypad(Keypadbox.getSelectedItem().toString() );
 			  }
 		} );
@@ -219,7 +220,7 @@ public class KioskPanel implements Panel{
 		panel.add(btnRfidSubmit, gbc_btnRfidSubmit);
 		btnRfidSubmit.addActionListener(new ActionListener() {
 			  public void actionPerformed(ActionEvent e) { 
-				  building.getLogger().log(Level.INFO, FloorCbx.getSelectedItem().toString() + "'s koisk pass RFID id " + RFIDCbx.getSelectedItem().toString());
+				  log.info("{}'s koisk pass RFID id {}", FloorCbx.getSelectedItem().toString(), RFIDCbx.getSelectedItem().toString());
 				  kiosk.readRFID(RFIDCbx.getSelectedItem().toString());
 			  }
 		} );
