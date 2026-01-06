@@ -13,31 +13,30 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor
 public class RFID {
 	//Used to check if valid floor is inputed
 	
-	public RFID(){
-	}
 	
-	
-	public String getFloorById(String id){
+	public String getFloorById(final String id){
 		String floor = "na";
 		try{
-     	   File database = new File("etc/RFID_DB");
-     	   BufferedReader br = new BufferedReader(new FileReader(database));
-     	   String line = null;
-     	   // Read from the database file
-     	   // unless content matches data to get the floor 
-     	   while ((line = br.readLine()) != null) {
-     		   if (line.contains(id)) {
-     			   if(line.split(",")[0].contentEquals(id))
-     				   floor = line.split(",")[1];
-     			   break;
+     	   final File database = new File("etc/RFID_DB");
+     	   try (final BufferedReader br = new BufferedReader(new FileReader(database))) {
+     		   String line;
+     		   // Read from the database file
+     		   // unless content matches data to get the floor 
+     		   while ((line = br.readLine()) != null) {
+     			   if (line.contains(id)) {
+     				   if(line.split(",")[0].contentEquals(id))
+     					   floor = line.split(",")[1];
+     				   break;
+     			   }
      		   }
      	   }
-     	   br.close();
-           }catch (Exception ex){
+           }catch (final Exception ex){
         		  System.out.println("File not found");
            }     
 		System.out.println(floor);
@@ -45,67 +44,60 @@ public class RFID {
 	}
 	
 	public ArrayList<String> getAllTheId(){
-		ArrayList<String> id = new ArrayList<String>();
+		final ArrayList<String> id = new ArrayList<>();
 		
 		try{
-				id.clear();
-	     	   File database = new File("etc/RFID_DB");
-	     	   BufferedReader br = new BufferedReader(new FileReader(database));
-
-	     	   String line = null; int count = 0;
-	     	   // Read from the database file
-	     	   // Get all the RFID
-	     	   while ((line = br.readLine()) != null) {
-	     		   if(count != 0){
-	     			  id.add(line.split(",")[0]);
+	     	   final File database = new File("etc/RFID_DB");
+	     	   try (final BufferedReader br = new BufferedReader(new FileReader(database))) {
+	     		   String line;
+	     		   int count = 0;
+	     		   // Read from the database file
+	     		   // Get all the RFID
+	     		   while ((line = br.readLine()) != null) {
+	     			   if(count != 0){
+	     				  id.add(line.split(",")[0]);
+	     			   }
+	     			   count++;
 	     		   }
-	     		   count++;
 	     	   }
-	     	   br.close();
-	           }catch (Exception ex){
+	           }catch (final Exception ex){
 	        		  System.out.println("File not found");
 	           }     
 		
 		return id;
 	}
 	
-	public void insertData(String data){
+	public void insertData(final String data){
 		//Append the data in the RFID_DB
-        try(FileWriter fw = new FileWriter("etc/RFID_DB", true);
-        	    BufferedWriter bw = new BufferedWriter(fw);
-        	    PrintWriter out = new PrintWriter(bw))
+        try(final FileWriter fw = new FileWriter("etc/RFID_DB", true);
+        	    final BufferedWriter bw = new BufferedWriter(fw);
+        	    final PrintWriter out = new PrintWriter(bw))
         	{ 
         	    out.println(data);
-        	    bw.close();
-        	    out.close();
         	    System.out.println("Insert data sucessfully");
-        	} catch (IOException ex) {
+        	} catch (final IOException ex) {
         	    System.out.println("Data cannot insert to the databse.");
         	}
 	}
 	
-	public void updateData(String id, String data){
+	public void updateData(final String id, final String data){
 		try{
-     	   File originalFile = new File("etc/RFID_DB");
-     	   BufferedReader br = new BufferedReader(new FileReader(originalFile));
-     	   // Construct the new file that will later be renamed to the original
-     	   // filename.
-     	   File tempFile = new File("etc/myTempFile");
-     	   PrintWriter pw = new PrintWriter(new FileWriter(tempFile));
-
-     	   String line = null;
-     	   // Read from the original file and write to the new
-     	   // unless content matches data to be removed.
-     	   while ((line = br.readLine()) != null) {
-     		   if (line.contains(id)) {
-     			   line = data;
+     	   final File originalFile = new File("etc/RFID_DB");
+     	   final File tempFile = new File("etc/myTempFile");
+     	   try (final BufferedReader br = new BufferedReader(new FileReader(originalFile));
+     			    final PrintWriter pw = new PrintWriter(new FileWriter(tempFile))) {
+     		   String line;
+     		   // Read from the original file and write to the new
+     		   // unless content matches data to be removed.
+     		   while ((line = br.readLine()) != null) {
+     			   if (line.contains(id)) {
+     				   line = data;
+     			   }
+     			   pw.println(line);
+     			   pw.flush();
      		   }
-     		   pw.println(line);
-     		   pw.flush();
+     		   System.out.println("Update data sucessfully");
      	   }
-     	  System.out.println("Update data sucessfully");
-     	   pw.close();
-     	   br.close();
      	   // Delete the original file
      	   if (!originalFile.delete()) {
      		   System.out.println("Could not delete file");
@@ -114,44 +106,42 @@ public class RFID {
      	   // Rename the new file to the filename the original file had.
      	   if (!tempFile.renameTo(originalFile))
      		   System.out.println("Could not rename file");
-        		}catch (Exception ex){
+        		}catch (final Exception ex){
         		   System.out.println("Update error");
         		} 
 	}
 	
-	public void deleteData(String data){
+	public void deleteData(final String data){
 		 //Delete data in the RFID_DB 
-        File inputFile = new File("etc/RFID_DB");
-        File tempFile = new File("etc/myTempFile");
+        final File inputFile = new File("etc/RFID_DB");
+        final File tempFile = new File("etc/myTempFile");
 
         try{
-        BufferedReader reader = new BufferedReader(new FileReader(inputFile));
-        BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile));	
-        String lineToRemove = data;
-        String currentLine;
+        try (final BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+        		final BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
+        	final String lineToRemove = data;
+        	String currentLine;
 
-        while((currentLine = reader.readLine()) != null) {
-            // trim newline when comparing with lineToRemove
-            String trimmedLine = currentLine.trim();
-            if(trimmedLine.equals(lineToRemove)) {
-            }else{
-            	writer.write(currentLine + System.getProperty("line.separator"));
-            }
+        	while((currentLine = reader.readLine()) != null) {
+        		// trim newline when comparing with lineToRemove
+        		final String trimmedLine = currentLine.trim();
+        		if(!trimmedLine.equals(lineToRemove)) {
+        			writer.write(currentLine + System.getProperty("line.separator"));
+        		}
+        	}
         }
-        writer.close(); 
-        reader.close(); 
-        boolean successful = tempFile.renameTo(inputFile);
+        final boolean successful = tempFile.renameTo(inputFile);
         System.out.println("Delete data " + successful);
-        }catch (Exception ex){
+        }catch (final Exception ex){
         	System.out.println("Delete Error");
         }
 	}
 	
 	public void backUp() throws IOException{
-		Path FROM = Paths.get("etc/RFID_DB");
-	    Path TO = Paths.get("etc/RFID_Backup");
+		final Path FROM = Paths.get("etc/RFID_DB");
+	    final Path TO = Paths.get("etc/RFID_Backup");
 	  //overwrite existing file, if exists
-	    CopyOption[] options = new CopyOption[]{
+	    final CopyOption[] options = new CopyOption[]{
 	      StandardCopyOption.REPLACE_EXISTING,
 	      StandardCopyOption.COPY_ATTRIBUTES
 	    }; 

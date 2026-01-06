@@ -49,19 +49,19 @@ public class Building {
     /**
      * Logging module for verbose, debugging and warning/error messages.
      */
-    private Logger log = null;
+    private final Logger log;
     /**
      * A hash table storing all created thread-object in this respective building, with its identifier as the key.
      */
-    private Hashtable<String, AppThread> appThreads = null;
+    private final ConcurrentHashMap<String, AppThread> appThreads;
     /**
      * Storage for all panels instances.
      */
-    private LinkedList<Panel> subWnds = new LinkedList<>();
+    private final ArrayList<Panel> subWnds = new ArrayList<>();
     /**
      *
      */
-    private Hashtable<Floor, Kiosk> kiosks = new Hashtable<>();
+    private final ConcurrentHashMap<Floor, Kiosk> kiosks = new ConcurrentHashMap<>();
     // http://cookieandcoketw.blogspot.hk/2013/03/java-hashmap-hashtable.html
     // http://www.infoq.com/cn/articles/ConcurrentHashMap
     //JavaDoc for the kioskHoppingRequests
@@ -69,7 +69,7 @@ public class Building {
     /**
      * Accessors for different properties in this building configuration.
      */
-    private Properties cfgProps = null;
+    private final Properties cfgProps;
     /**
      * Holds the thread that refreshes the cache of statuses of all elevators.
      */
@@ -92,18 +92,17 @@ public class Building {
      */
     public Building() throws InvalidPropertiesFormatException {
         // read system config from property file
-        try {
-            cfgProps = new Properties();
-            FileInputStream in = new FileInputStream(cfgFName);
-            cfgProps.load(in);
-            in.close();
-        } catch (FileNotFoundException e) {
+        final Properties props = new Properties();
+        try (final FileInputStream in = new FileInputStream(cfgFName)) {
+            props.load(in);
+        } catch (final FileNotFoundException e) {
             System.out.println("Failed to open config file (" + cfgFName + ").");
             System.exit(-1);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             System.out.println("Error reading config file (" + cfgFName + ").");
             System.exit(-1);
         }
+        this.cfgProps = props;
 
         // values for final properties
         if (cfgProps.containsKey("DisplacementMeters"))
@@ -112,15 +111,15 @@ public class Building {
             throw new InvalidPropertiesFormatException("missing DisplacementMeters");
 
         {
-            String[] floorNames;
+            final String[] floorNames;
             if (cfgProps.containsKey("FloorNames"))
                 floorNames = cfgProps.getProperty("FloorNames").split("\\|");
             else
                 throw new InvalidPropertiesFormatException("missing FloorNames");
 
-            double[] floorPositions;
+            final double[] floorPositions;
             if (cfgProps.containsKey("FloorPositions")) {
-                Stream<String> s = Arrays.stream(cfgProps.getProperty("FloorPositions").split("\\|"));
+                final Stream<String> s = Arrays.stream(cfgProps.getProperty("FloorPositions").split("\\|"));
                 floorPositions = s.mapToDouble(Double::parseDouble).toArray();
             } else
                 throw new InvalidPropertiesFormatException("missing FloorPositions");
@@ -130,57 +129,55 @@ public class Building {
                 throw new InvalidPropertiesFormatException("floorNames.length != floorPositions.length");
 
             // A dictionary storing all stoppale hops (floors) and the position, in meters, of displacement where the hop is.
-            Hashtable<String, Floor> floorPositions1 = new Hashtable<>();
+            final ConcurrentHashMap<String, Floor> floorPositions1 = new ConcurrentHashMap<>();
             Floor lowerFloor = null;
             for (int i = 0; i < floorNames.length; i++) {
-                Floor floor = new Floor(floorNames[i], floorPositions[i]);
+                final Floor floor = new Floor(floorNames[i], floorPositions[i]);
                 floor.setLowerFloor(lowerFloor);
                 floorPositions1.put(floorNames[i], floor);
                 lowerFloor = floor;
             }
 
-            LinkedHashMap<String, Floor> floorPositions2 = floorPositions1.entrySet().stream().sorted(Map.Entry.comparingByValue()).collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+            final LinkedHashMap<String, Floor> floorPositions2 = floorPositions1.entrySet().stream().sorted(Map.Entry.comparingByValue()).collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
 
             this.arefFloorPositions = new AtomicReference<>(floorPositions2);
         }
 
         // get and configure logger
-        ConsoleHandler conHd = new ConsoleHandler();
+        final ConsoleHandler conHd = new ConsoleHandler();
         conHd.setFormatter(new LogFormatter());
-        log = Logger.getLogger(Building.class.getName());
-        log.setUseParentHandlers(false);
-        log.addHandler(conHd);
-        log.setLevel(Level.INFO);
-        appThreads = new Hashtable<>();
+        final Logger logger = Logger.getLogger(Building.class.getName());
+        logger.setUseParentHandlers(false);
+        logger.addHandler(conHd);
+        logger.setLevel(Level.INFO);
+        this.log = logger;
+        this.appThreads = new ConcurrentHashMap<>();
 
 //        kioskHoppingRequests = new ConcurrentHashMap<>();
-        elevatorsStatuses = new ConcurrentHashMap<>();
+        // elevatorsStatuses already initialized as final field
     }
 
     /**
      * Java.exe entry point for loading up the Building simulation element.
      */
-    public static void main(String args[]) {
-        Building building;
+    public static void main(final String[] args) {
+        final Building building;
         try {
             building = new Building();
-        } catch (Exception e) {
+        } catch (final Exception e) {
             System.out.println("Cannot instantiate Building object:");
             e.printStackTrace();
             return;
         }
         
-        Panel window = new AdminPanel(building.getFloorNames());
+        final Panel window = new AdminPanel(building.getFloorNames());
 
-        java.lang.Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                System.out.println("caught an application exit signal.");
-                building.appThreads.values().forEach(AppThread::interrupt);
-                building.subWnds.forEach(Panel::dismissInfo);
-                window.dismissInfo();
-            }
-        });
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("caught an application exit signal.");
+            building.appThreads.values().forEach(AppThread::interrupt);
+            building.subWnds.forEach(Panel::dismissInfo);
+            window.dismissInfo();
+        }));
 
         window.showInfo();
         building.startApp();
@@ -192,24 +189,24 @@ public class Building {
     @SuppressWarnings("WeakerAccess")
     public void startApp() {
         // This is for elevator use implement by steven and kers
-        Timer timer = new Timer("timer", this);
+        final Timer timer = new Timer("timer", this);
 
         // Create Kiosks k0 = floor 1 kiosk, k1 = floor 2 kiosk ......
-        int kc = new Integer(this.getProperty("Kiosks"));
-        ArrayList<Floor> floors = new ArrayList<>(getFloorPositions().values());
+        final int kc = Integer.parseInt(this.getProperty("Kiosks"));
+        final ArrayList<Floor> floors = new ArrayList<>(getFloorPositions().values());
         for (int i = 0; i < kc; i++) {
-            Floor floor = floors.get(i);
-            Kiosk kiosk = new Kiosk("k" + i, this, floor);
+            final Floor floor = floors.get(i);
+            final Kiosk kiosk = new Kiosk("k" + i, this, floor);
             kiosk.start();
             kiosks.put(floor, kiosk);
             this.appThreads.put(kiosk.getID(), kiosk);
         }
 
         // Create elevator e0 = elevator 1, e1 = elevator 2 ......
-        int e = new Integer(this.getProperty("Elevators"));
+        final int e = Integer.parseInt(this.getProperty("Elevators"));
         getLogger().info(String.format("Elevators = %d", e));
         for (int i = 0; i < e; i++) {
-            Elevator elevator = new Elevator("e" + i, this);
+            final Elevator elevator = new Elevator("e" + i, this);
             elevator.start();
             this.appThreads.put(elevator.getID(), elevator);
         }
@@ -221,12 +218,12 @@ public class Building {
         this.appThreads.put(timer.getID(), timer);
 
         // Wait all the thread object created. Then open control panel GUI
-        ControlPanel controlPanel = new ControlPanel(this);
+        final ControlPanel controlPanel = new ControlPanel(this);
         this.subWnds.add(controlPanel);
         controlPanel.showInfo();
 
         // show kiosk panel for testing
-        KioskPanel kioskPanel = new KioskPanel(this);
+        final KioskPanel kioskPanel = new KioskPanel(this);
         this.subWnds.add(kioskPanel);
         kioskPanel.showInfo();
 
@@ -248,11 +245,11 @@ public class Building {
 
         this.threadBuildingRefreshElevatorStatusCache = new Thread(() -> {
             while (true) {
-                Collection<Elevator> elevators = this.getThreads(Elevator.class);
+                final Collection<Elevator> elevators = this.getThreads(Elevator.class);
                 elevators.forEach(e -> this.elevatorsStatuses.put(e, e.getStatus()));
                 try {
                     Thread.sleep(200);
-                } catch (InterruptedException e) {
+                } catch (final InterruptedException e) {
                     System.out.println("BuildingRefreshElevatorStatusCache interrupted");
                     break;
                 }
@@ -397,9 +394,9 @@ public class Building {
      * @return The elevator that is assigned for passenger to board, or <code>null</code> if retried <code>putStoppingHopMaxRetries</code> times.
      * @throws IndexOutOfBoundsException Throws when floor name, which is value of <code>destFloor</code>, does not exist in <code>floorPositions</code>.
      */
-    public synchronized Elevator putNewHopRequest(Kiosk kiosk, String destFloor) throws IndexOutOfBoundsException {
-        Floor src = kiosk.getFloor();
-        Floor dest = getFloorPositions().get(destFloor);
+    public synchronized Elevator putNewHopRequest(final Kiosk kiosk, final String destFloor) throws IndexOutOfBoundsException {
+        final Floor src = kiosk.getFloor();
+        final Floor dest = getFloorPositions().get(destFloor);
 
         if (dest == null)
             throw new IndexOutOfBoundsException("destFloor key not exist in floorPositions"); // TODO: throw or null;
@@ -407,16 +404,16 @@ public class Building {
         if (src.equals(dest))
             return null; // won't assign any but shit you donk
 
-        boolean isGoingUp = dest.getYPosition() - src.getYPosition() > 0;
+        final boolean isGoingUp = dest.getYPosition() - src.getYPosition() > 0;
 
         // TODO: sort by: queueCount, direction, distance to src, speed (~=braking dist)
         // TODO: calculate which lift to catch the request
-        LinkedList<ElevatorStatus> ess = new LinkedList<>(elevatorsStatuses.values());
+        final ArrayList<ElevatorStatus> ess = new ArrayList<>(elevatorsStatuses.values());
         ess.sort(new ElevatorStatusDistanceToFloorComparator(isGoingUp, src));
 
         int tries = 0;
         for (int i = 0; i < ess.size() && tries < putStoppingHopMaxRetries; i = ++tries % ess.size()) {
-            ElevatorStatus es = ess.get(i);
+            final ElevatorStatus es = ess.get(i);
 
             // push back to the lift to update its next destination.
             if (es.getElevator().putNewDestination(src)) {
@@ -434,12 +431,12 @@ public class Building {
      * @param floor The specified {@code Floor} to find.
      * @return A {@code Collection} of {@code Elevator}s that is docked on that {@code Floor}.
      */
-    public Collection<Elevator> getDockedElevatorsFromFloor(Floor floor) {
-        LinkedList<Elevator> elevators = new LinkedList<>();
+    public Collection<Elevator> getDockedElevatorsFromFloor(final Floor floor) {
+        final ArrayList<Elevator> elevators = new ArrayList<>();
 
-        for (Elevator e : getElevators()) {
-            double elevYPos = e.getStatus().getYPosition();
-            double floorYPos = floor.getYPosition();
+        for (final Elevator e : getElevators()) {
+            final double elevYPos = e.getStatus().getYPosition();
+            final double floorYPos = floor.getYPosition();
 
             if (elevYPos < floorYPos - 0.05 || elevYPos > floorYPos + 0.05)
                 continue;

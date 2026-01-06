@@ -10,8 +10,9 @@ import java.util.Calendar;
 public class LogFormatter extends Formatter {
     //------------------------------------------------------------
     // format
-    public String format(LogRecord rec) {
-	Calendar cal = Calendar.getInstance();
+    @Override
+    public String format(final LogRecord rec) {
+	final Calendar cal = Calendar.getInstance();
 	String str = "";
 
 	// get date

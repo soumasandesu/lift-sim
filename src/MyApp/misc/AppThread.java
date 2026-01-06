@@ -12,25 +12,25 @@ public abstract class AppThread extends Thread {
 	/**
 	 * Represents that the identifier for such object in the building elevator and kiosk system.
 	 */
-    protected String id;
+    protected final String id;
     /**
      * Reference to the parent building for such object holds in.
      */
-    protected Building building;
-    protected MBox mbox = null;
-    protected Logger log = null;
-    protected HashMap<Integer, String> queue;
+    protected final Building building;
+    protected final MBox mbox;
+    protected final Logger log;
+    protected final HashMap<Integer, String> queue;
 
     //------------------------------------------------------------
     // AppThread
-    public AppThread(String id, Building building) {
+    public AppThread(final String id, final Building building) {
         super(id);
 		this.id = id;
 		this.building = building;
-		log = building.getLogger();
-		mbox = new MBox(id, log);
+		this.log = building.getLogger();
+		this.mbox = new MBox(id, this.log);
 		building.putThread(this);
-		queue = new HashMap<Integer, String>();
+		this.queue = new HashMap<>();
     } // AppThread
 
 

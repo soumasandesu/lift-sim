@@ -1,30 +1,39 @@
 package MyApp.misc;
 
 import MyApp.elevator.Elevator;
+import lombok.Getter;
+import lombok.AllArgsConstructor;
 
 // TODO: javadocs for properties and methods in ElevatorStatus
 
+@Getter
+@AllArgsConstructor
 public class ElevatorStatus implements Comparable<ElevatorStatus> {
-	private Elevator elevator;
-	private double height;
-	private double velocity;
-	private double breakDistance;
-	private double acceleration;
-	private int queueCount;
-	private int servingDirection;
+	private final Elevator elevator;
+	private final double height;
+	private final double velocity;
+	private final double breakDistance;
+	private final double acceleration;
+	private final int queueCount;
+	private final int servingDirection;
 	
-	public ElevatorStatus(Elevator elevator, double height, double velocity, double breakDistance, double acceleration, int queueCount, int servingDirection) {
+	public ElevatorStatus(final Elevator elevator, final double height, final double velocity, final double breakDistance, final double acceleration, final int queueCount, final int servingDirection) {
 		this.elevator = elevator;
 		this.height = height;
 		this.velocity = velocity;
 		this.breakDistance = breakDistance;
 		this.acceleration = acceleration;
 		this.queueCount = queueCount;
-		setServingDirection(servingDirection);
+		this.servingDirection = normalizeDirection(servingDirection);
     }
-
-	public Elevator getElevator() {
-		return elevator;
+	
+	private static int normalizeDirection(final int value) {
+		if (value > 0)
+			return 1;
+		else if (value < 0)
+			return -1;
+		else
+			return 0;
 	}
 
 	public double getYPosition(){
@@ -49,33 +58,8 @@ public class ElevatorStatus implements Comparable<ElevatorStatus> {
         return 0;
     }
 
-	public double getBrakeDistance(){
-		return this.breakDistance;
-	}
-
-	public double getAcceleration(){
-		return this.acceleration;
-	}
-
-	public int getQueueCount() {
-		return queueCount;
-	}
-
 	@Override
-	public int compareTo(ElevatorStatus o) {
+	public int compareTo(final ElevatorStatus o) {
 		return this.getElevator().compareTo(o.getElevator());
-	}
-
-    public int getServingDirection() {
-        return servingDirection;
-    }
-
-    private void setServingDirection(int value) {
-		if (value > 0)
-			this.servingDirection = 1;
-		else if (value < 0)
-			this.servingDirection = -1;
-		else
-			this.servingDirection = 0;
 	}
 }

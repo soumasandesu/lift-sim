@@ -5,7 +5,6 @@ import MyApp.building.Building;
 
 import java.lang.Thread;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Random;
 
 //======================================================================
@@ -13,17 +12,17 @@ import java.util.Random;
 public class Timer extends AppThread {
     private final int ticks;
     private static MBox timerMBox = null;
-    private Ticker ticker = null;
-    private ArrayList<ActiveTimer> timerList = null;
+    private final Ticker ticker;
+    private final ArrayList<ActiveTimer> timerList;
 
     //------------------------------------------------------------
     // Timer
-    public Timer(String id, Building appkickstarter) {
+    public Timer(final String id, final Building appkickstarter) {
         super(id, appkickstarter);
-	ticker = new Ticker(getMBox());
+	this.ticker = new Ticker(getMBox());
 	timerMBox = getMBox();
-	timerList = new ArrayList<ActiveTimer>();
-	ticks = new Integer(building.getProperty("TimerTicks"));
+	this.timerList = new ArrayList<>();
+	this.ticks = Integer.parseInt(building.getProperty("TimerTicks"));
     } // Timer
 
 
@@ -34,7 +33,7 @@ public class Timer extends AppThread {
 	new Thread(ticker).start();
 
 	while (true) {
-	    Msg msg = mbox.receive();
+	    final Msg msg = mbox.receive();
 
 	    if (msg.getSender().equals("Ticker")) {
 		chkTimeout();
@@ -44,8 +43,8 @@ public class Timer extends AppThread {
 		} else if (msg.getDetails().startsWith("cancel timer, ")) {
 		    cancel(msg);
 		} else {
-		    String eMsg = "Invalid command for Timer: "+msg;
-		    throw (new RuntimeException(eMsg));
+		    final String eMsg = "Invalid command for Timer: "+msg;
+		    throw new RuntimeException(eMsg);
 		}
 	    }
 	}
@@ -55,20 +54,20 @@ public class Timer extends AppThread {
     //------------------------------------------------------------
     // chkTimeout
     private void chkTimeout() {
-	long currentTime = (new Date()).getTime();
-	ArrayList<ActiveTimer> timeoutTimers = new ArrayList<ActiveTimer>();
+	final long currentTime = System.currentTimeMillis();
+	final ArrayList<ActiveTimer> timeoutTimers = new ArrayList<>();
 	//log.info("Timer chk...");
 
-	for (ActiveTimer timer : timerList) {
+	for (final ActiveTimer timer : timerList) {
 	    if (timer.timeout(currentTime)) {
 		timeoutTimers.add(timer);
 	    }
 	}
 
-	for (ActiveTimer timer : timeoutTimers) {
-	    int timerID = timer.getTimerID();
-	    String caller = timer.getCaller();
-	    MBox mbox = building.getThread(caller).getMBox();
+	for (final ActiveTimer timer : timeoutTimers) {
+	    final int timerID = timer.getTimerID();
+	    final String caller = timer.getCaller();
+	    final MBox mbox = building.getThread(caller).getMBox();
 	    mbox.send(new Msg("Timer", 999, "["+timerID+"]: Time's up!"));
 	    timerList.remove(timer);
 	}
@@ -78,11 +77,11 @@ public class Timer extends AppThread {
     //------------------------------------------------------------
     // ticker
     private class Ticker implements Runnable {
-	private MBox timerMBox = null;
+	private final MBox timerMBox;
 
 	//----------------------------------------
 	// ticker
-	public Ticker(MBox timerMBox) {
+	public Ticker(final MBox timerMBox) {
 	    this.timerMBox = timerMBox;
 	} // Ticker
 
@@ -93,7 +92,10 @@ public class Timer extends AppThread {
 	    while (true) {
 		try {
 		    Thread.sleep(ticks);
-		} catch (Exception e) {};
+		} catch (final InterruptedException e) {
+		    Thread.currentThread().interrupt();
+		    break;
+		}
 		mbox.send(new Msg("Ticker", 0, "tick"));
 	    }
 	} // run
@@ -103,13 +105,13 @@ public class Timer extends AppThread {
     //------------------------------------------------------------
     // ActiveTimer
     private static class ActiveTimer {
-	private int  timerID;
-	private long wakeupTime;
-	private String caller;
+	private final int  timerID;
+	private final long wakeupTime;
+	private final String caller;
 
 	//----------------------------------------
 	// ActiveTimer
-	public ActiveTimer(int timerID, long wakeupTime, String caller) {
+	public ActiveTimer(final int timerID, final long wakeupTime, final String caller) {
 	    this.timerID = timerID;
 	    this.wakeupTime = wakeupTime;
 	    this.caller = caller;
@@ -122,7 +124,7 @@ public class Timer extends AppThread {
 
 	//----------------------------------------
 	// timeout
-	public boolean timeout(long currentTime) {
+	public boolean timeout(final long currentTime) {
 	    return currentTime > wakeupTime;
 	} // timeout
     } // ActiveTimer
@@ -130,8 +132,8 @@ public class Timer extends AppThread {
 
     //------------------------------------------------------------
     // setTimer
-    public static int setTimer(String id, long sleepTime) {
-	int timerID = (new Random()).nextInt(9000) + 1000;
+    public static int setTimer(final String id, final long sleepTime) {
+	final int timerID = new Random().nextInt(9000) + 1000;
 	timerMBox.send(new Msg(id, 0, "set timer, "+sleepTime+", "+timerID));
 	return timerID;
     } // setTimer
@@ -139,20 +141,20 @@ public class Timer extends AppThread {
 
     //------------------------------------------------------------
     // set
-    private void set(Msg msg) {
-	String details = msg.getDetails().substring(11);
+    private void set(final Msg msg) {
+	final String details = msg.getDetails().substring(11);
 
 	// get timerID
-	String timerIDStr = details.substring(details.indexOf(", ")+2);
-	int timerID = new Integer(timerIDStr).intValue();
+	final String timerIDStr = details.substring(details.indexOf(", ")+2);
+	final int timerID = Integer.parseInt(timerIDStr);
 
 	// get wakeup time
-	String sleepTimeStr = details.substring(0, details.indexOf(", "));
-	long sleepTime = new Long(sleepTimeStr).longValue();
-	long wakeupTime = (new Date()).getTime() + sleepTime;
+	final String sleepTimeStr = details.substring(0, details.indexOf(", "));
+	final long sleepTime = Long.parseLong(sleepTimeStr);
+	final long wakeupTime = System.currentTimeMillis() + sleepTime;
 
 	// get caller
-	String caller = msg.getSender();
+	final String caller = msg.getSender();
 
 	// add this new timer to timer list
 	timerList.add(new ActiveTimer(timerID, wakeupTime, caller));
@@ -163,25 +165,25 @@ public class Timer extends AppThread {
 
     //------------------------------------------------------------
     // cancelTimer
-    public static void cancelTimer(String id, int timerID) {
+    public static void cancelTimer(final String id, final int timerID) {
 	timerMBox.send(new Msg(id, 1, "cancel timer, "+timerID));
     } // cancelTimer
 
 
     //------------------------------------------------------------
     // cancel
-    private void cancel(Msg msg) {
+    private void cancel(final Msg msg) {
 	// get timerID
-	String details = msg.getDetails();
-	String timerIDStr = details.substring(details.indexOf(", ")+2);
-	int timerID = new Integer(timerIDStr).intValue();
+	final String details = msg.getDetails();
+	final String timerIDStr = details.substring(details.indexOf(", ")+2);
+	final int timerID = Integer.parseInt(timerIDStr);
 
 	// get caller
-	String caller = msg.getSender();
+	final String caller = msg.getSender();
 
 	ActiveTimer cancelTimer = null;
 
-	for (ActiveTimer timer : timerList) {
+	for (final ActiveTimer timer : timerList) {
 	    if (timer.getTimerID() == timerID) {
 		if (timer.getCaller().equals(caller)) {
 		    cancelTimer = timer;

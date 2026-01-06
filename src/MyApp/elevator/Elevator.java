@@ -19,16 +19,16 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
      */
     public static int elevatorCount = 0;
 
-    private int elevatorId;
+    private final int elevatorId;
     /**
      * Default setting in config file. Assume each floor has 4m
      */
     @Deprecated
-    private double heightOfFloor;
+    private final double heightOfFloor;
     /**
      * Default setting in config file. Assume the accelation is 5
      */
-    private double maxAccelerationRate;
+    private final double maxAccelerationRate;
     /**
      * Determine the direction of elevator. E.G. -5 or +5
      */
@@ -37,12 +37,12 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
      * Default setting in config file. Assume the elevator move 120 meter per 1 mins
      * This is reference hitachi elevator spec.
      */
-    private double maxSpeed;
+    private final double maxSpeed;
     /**
      * This is for elevator talk to kiosk.
      * When elevator let the passenger in, elevator will send msg(call kiosk finishRequest() => remove the request)
      */
-    private ArrayList<MBox> kioskMBox;
+    private final ArrayList<MBox> kioskMBox;
     /**
      * This parameter represent the vertical position (Y-axis) of the elevator in the lift shaft.
      * This is calculated from the ground of the cab of the lift.
@@ -61,7 +61,7 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
     /**
      * Default setting in config file. Elevator will update itself for 30ms
      */
-    private int updateWaitDuration;
+    private final int updateWaitDuration;
     /**
      * Storing the last moment that called the {@code Simulate()}.
      */
@@ -72,12 +72,12 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
      * They will clean one direction of mission first, then use other one
      * This process will repeat
      */
-    private ArrayList<Floor> missionQueueUpward = new ArrayList<>();
-    private ArrayList<Floor> missionQueueDownward = new ArrayList<>();
+    private final ArrayList<Floor> missionQueueUpward = new ArrayList<>();
+    private final ArrayList<Floor> missionQueueDownward = new ArrayList<>();
     /**
      * Get the floor list form building for the target number
      */
-    private String[] floorList;
+    private final String[] floorList;
     /**
      * Indicates which direction of traffic this Elevator is serving and will serve first.
      */
@@ -88,7 +88,7 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
      * @param id The ID to be used.
      * @param building Building which this elevator belongs to.
      */
-    public Elevator(String id, Building building) {
+    public Elevator(final String id, final Building building) {
         super(id, building);
         //Get property from building object
         this.heightOfFloor = Double.parseDouble(building.getProperty("HeightOfFloor"));
@@ -96,12 +96,13 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
         this.maxSpeed = Double.parseDouble(building.getProperty("MaxSpeed"));
         this.updateWaitDuration = Integer.parseInt(building.getProperty("TimerTicks"));
         //Get all kiosk MBox for communication with kiosk
-        kioskMBox = new ArrayList<MBox>();
+        final ArrayList<MBox> mboxList = new ArrayList<>();
         for (int i = 0; i < Kiosk.kioskCount; i++) {
-            kioskMBox.add(building.getThread("k" + i).getMBox());
+            mboxList.add(building.getThread("k" + i).getMBox());
         }
-        elevatorId = elevatorCount++;
-        floorList = building.getFloorNames();
+        this.kioskMBox = mboxList;
+        this.elevatorId = elevatorCount++;
+        this.floorList = building.getFloorNames();
     }
 
     /**
@@ -134,7 +135,7 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
      * @param floor The floor to ask for.
      * @return The index in the dictionary.
      */
-    public int getFloorIndex(Floor floor) {
+    public int getFloorIndex(final Floor floor) {
         for (int i = 0; i < floorList.length; i++) {
             if (floorList[i].equals(floor.getName()))
                 return i;
@@ -148,11 +149,11 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
      *
      * @param target The destination floor to hop on.
      */
-    public void addQueue(Floor target) {
+    public void addQueue(final Floor target) {
         queue.put(getFloorIndex(target), id);
 
-        ArrayList<Floor> missionQueue;
-        int direction = (int)(target.getYPosition() - getStatus().getYPosition());
+        final ArrayList<Floor> missionQueue;
+        final int direction = (int)(target.getYPosition() - getStatus().getYPosition());
 
         if (direction > 0)
             missionQueue = missionQueueUpward;
@@ -177,14 +178,14 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
      * Perform physic simulations of the {@code Elevator} by changing its physic parameters during passing {@code elapseMillSec} ms of time.
      * @throws InterruptedException If this thread is interrupted by any other threads that needs it to be terminated.
      */
-    private void simulate(long elapseMillSec) throws InterruptedException {
+    private void simulate(final long elapseMillSec) throws InterruptedException {
 
         // set this elevator may serve any direction if both jobs are done
         // switch direction if same direction has no jobs to work on
         if (servingDirection == 0) {
             if (missionQueueUpward.size() > 0) {
                 servingDirection = 1;
-            } if (missionQueueDownward.size() > 0) {
+            } else if (missionQueueDownward.size() > 0) {
                 servingDirection = -1;
             }
             return;
@@ -196,15 +197,15 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
         }
 
         // select which queue to use, upward or downward
-        ArrayList<Floor> missionQueue;
+        final ArrayList<Floor> missionQueue;
         if (servingDirection > 0)
             missionQueue = missionQueueUpward;
         else
             missionQueue = missionQueueDownward;
 
-        double brakeDistance = getStatus().getBrakeDistance();
-        Floor target = missionQueue.get(0);
-        double targetYPos = target.getYPosition();
+        final double brakeDistance = getStatus().getBrakeDistance();
+        final Floor target = missionQueue.get(0);
+        final double targetYPos = target.getYPosition();
 
         // upward and downward use the same formula. generalised.
         if (targetYPos != this.yPosition) {
@@ -217,7 +218,7 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
             }
 
             // estimate if continue to accelerate, where this life will be at, where it should actually brake?
-            double whatYPosWillBeIfNotBrake = this.yPosition + (speed + accelerationRate * elapseMillSec / 1000) * elapseMillSec / 1000 + 0.5 * (accelerationRate) * Math.pow(elapseMillSec / 1000, 2);
+            final double whatYPosWillBeIfNotBrake = this.yPosition + (speed + accelerationRate * elapseMillSec / 1000) * elapseMillSec / 1000 + 0.5 * (accelerationRate) * Math.pow(elapseMillSec / 1000, 2);
 
             // brake?
 //            log.info(String.format("??? %.3f >= %.3f ???", yPosition, targetYPos - brakeDistance));
@@ -263,15 +264,15 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
      */
     public void run() {
         while (true) {
-            int timerID = Timer.setTimer(id, updateWaitDuration);
-            Msg msg = mbox.receive();
+            final int timerID = Timer.setTimer(id, updateWaitDuration);
+            final Msg msg = mbox.receive();
 
             if (!msg.getSender().equals("Timer"))
                 break;
 
             try {
                 simulate(updateWaitDuration);
-            } catch (InterruptedException e) {
+            } catch (final InterruptedException e) {
                 System.out.println("Elevator interrupted, terminating.");
             }
         }
@@ -288,14 +289,12 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
      * @param floor
      * @return
      */
-    public final synchronized boolean putNewDestination(Floor floor) {
-        boolean availableStop = false;
-
-        ElevatorStatus status = getStatus();
-        double yLift = status.getYPosition();
-        double yFloor = floor.getYPosition();
-        int dir = status.getActualDirection();
-        double brakeDistance = status.getBrakeDistance();
+    public final synchronized boolean putNewDestination(final Floor floor) {
+        final ElevatorStatus status = getStatus();
+        final double yLift = status.getYPosition();
+        final double yFloor = floor.getYPosition();
+        final int dir = status.getActualDirection();
+        final double brakeDistance = status.getBrakeDistance();
         // Get the floor height plus breaking distance to compare with the height of elevator (Use the top(y position) of elevator as the height)
         // First check the direction of elevator, if it is moving down(The height of elevator - 4m(height of floor)), y displacement + breaking distance
         // if it is moving up, y displacement - breaking distance
@@ -303,7 +302,8 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
         // (2)      yLift - brakeDistance >= yFloor (dn)
         // (flip 2) -yLift + brakeDistance <= -yFloor (dn)
         // (3=1+2)  dir * yLift + brakeDistance <= dir * yFloor
-        if (availableStop = dir * yLift + brakeDistance <= dir * yFloor) {
+        final boolean availableStop = dir * yLift + brakeDistance <= dir * yFloor;
+        if (availableStop) {
             //Add the request to mission queue, but the queue must rearrange (ascending order)
             addQueue(floor);
         }
@@ -317,7 +317,7 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
      * @return An integer which indicates that this or another elevator has higher priority to be listed.
      */
     @Override
-    public int compareTo(Elevator o) {
+    public int compareTo(final Elevator o) {
         return this.elevatorId - o.elevatorId;
     }
 }

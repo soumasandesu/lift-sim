@@ -14,20 +14,20 @@ import MyApp.building.Building;
 
 public class Kiosk extends AppThread implements Comparable<Kiosk> {
     public static int kioskCount = 0;
-    private int kioskid;
+    private final int kioskid;
     private Floor floor;
-	private String[] floorList;
-    private RFID rfid;
+	private final String[] floorList;
+    private final RFID rfid;
     private String kioskUpdate = "";
 
-    private HashMap<Elevator, LinkedHashSet<Floor>> awaitingDestinations = new HashMap<>();
+    private final HashMap<Elevator, LinkedHashSet<Floor>> awaitingDestinations = new HashMap<>();
 
-    public Kiosk(String id, Building building, Floor floor) {
+    public Kiosk(final String id, final Building building, final Floor floor) {
         super(id, building);
-        floorList = building.getFloorNames();
+        this.floorList = building.getFloorNames();
         this.floor = floor;
-        kioskid = kioskCount++;
-        rfid = new RFID();
+        this.kioskid = kioskCount++;
+        this.rfid = new RFID();
     }
     
     /**
@@ -42,7 +42,7 @@ public class Kiosk extends AppThread implements Comparable<Kiosk> {
      * Set floor of koisk
      * @return
      */
-    public void setFloor(Floor floor) {
+    public void setFloor(final Floor floor) {
         this.floor = floor;
     }
 
@@ -51,12 +51,12 @@ public class Kiosk extends AppThread implements Comparable<Kiosk> {
      * @param target
      * @return
      */
-    public void addRequest(String target) {
+    public void addRequest(final String target) {
         // String elevatorID = building.getResult(target, id);
         Elevator assignedTo = null;
         try {
             assignedTo = this.building.putNewHopRequest(this, target);
-        } catch (IndexOutOfBoundsException e) {
+        } catch (final IndexOutOfBoundsException e) {
         	kioskUpdate = "Error! please try again!";
         }
 
@@ -75,11 +75,11 @@ public class Kiosk extends AppThread implements Comparable<Kiosk> {
      * @param e Elevator
      * @param dest Floor
      */
-    private void putNewElevatorDestination(Elevator e, Floor dest) {
+    private void putNewElevatorDestination(final Elevator e, final Floor dest) {
         LinkedHashSet<Floor> floors;
 
         if ((floors = this.awaitingDestinations.get(e)) == null) {
-            LinkedHashSet<Floor> newLinkedHashSet = new LinkedHashSet<>();
+            final LinkedHashSet<Floor> newLinkedHashSet = new LinkedHashSet<>();
             this.awaitingDestinations.put(e, newLinkedHashSet);
             floors = newLinkedHashSet;
         }
@@ -91,7 +91,7 @@ public class Kiosk extends AppThread implements Comparable<Kiosk> {
      * Get the keypad input and add request in waiting list
      * @param destFloor
      */
-    protected void readKeypad(String destFloor) {
+    protected void readKeypad(final String destFloor) {
         if(Arrays.asList(floorList).contains(destFloor)){
         	building.getLogger().log(Level.INFO, String.format("read keypad, nfc id = %s, dest = %s", id, destFloor));
         	addRequest(destFloor);//dummy
@@ -103,12 +103,12 @@ public class Kiosk extends AppThread implements Comparable<Kiosk> {
 
     /**
      * Get the rfid reader input and add request in waiting list
-     * @param destFloor
+     * @param id
      */
-    protected void readRFID(String id) {
-        String destFloor = rfid.getFloorById(id);
+    protected void readRFID(final String id) {
+        final String destFloor = rfid.getFloorById(id);
       
-        if(destFloor != "na"){
+        if(!"na".equals(destFloor)){
         	building.getLogger().log(Level.INFO, String.format("read keypad, nfc id = %s, dest = %s", id, destFloor));
         	addRequest(destFloor);//dummy
         }else{
@@ -139,8 +139,8 @@ public class Kiosk extends AppThread implements Comparable<Kiosk> {
      * Request the building centralised controller to fetch all docked <code>Elevators</code>, and putting destination floors from Kiosk into
      */
     private void finishHopRequest() {
-        for (Elevator e : building.getDockedElevatorsFromFloor(this.getFloor())) {
-            LinkedHashSet<Floor> destFloors = this.awaitingDestinations.remove(e);
+        for (final Elevator e : building.getDockedElevatorsFromFloor(this.getFloor())) {
+            final LinkedHashSet<Floor> destFloors = this.awaitingDestinations.remove(e);
             if (destFloors == null) continue;
             destFloors.forEach(e::putNewDestination);
         }
@@ -152,14 +152,14 @@ public class Kiosk extends AppThread implements Comparable<Kiosk> {
      */
     public void run() {
         //create GUI with RFID/keypad input
-        Msg msg = mbox.receive();
+        final Msg msg = mbox.receive();
         System.out.println(id + ": Received msg: " + msg);
         
         //call finish request if elevator tell kiosk the request is finished
     }
 
     @Override
-    public int compareTo(Kiosk o) {
+    public int compareTo(final Kiosk o) {
         return this.getID().compareTo(o.getID());
     }
 
@@ -175,7 +175,7 @@ public class Kiosk extends AppThread implements Comparable<Kiosk> {
 	 * Update kiosk information 
 	 * @param text
 	 */
-	public void setUpdate(String text) {
+	public void setUpdate(final String text) {
 		kioskUpdate = text;
 	}
 }
