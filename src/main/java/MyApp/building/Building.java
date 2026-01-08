@@ -49,7 +49,7 @@ public class Building {
     /**
      * Stores all the statuses of all the Elevators inside this Building, as a cache.
      */
-    private final ConcurrentHashMap<Elevator, ElevatorStatus> elevatorsStatuses;
+    private final ConcurrentHashMap<Elevator, ElevatorStatus> elevatorsStatuses = new ConcurrentHashMap<>();
     /**
      * A hash table storing all created thread-object in this respective building, with its identifier as the key.
      */

@@ -1,16 +1,19 @@
 package MyApp.kiosk;
 
+import MyApp.building.Building;
 import MyApp.building.Floor;
 import MyApp.elevator.Elevator;
-import MyApp.misc.*;
+import MyApp.misc.AppThread;
+import MyApp.misc.Msg;
+import MyApp.misc.RFID;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 
-import MyApp.building.Building;
 
-
+@Slf4j
 public class Kiosk extends AppThread implements Comparable<Kiosk> {
     public static int kioskCount = 0;
     private final int kioskid;

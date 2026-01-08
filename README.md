@@ -17,7 +17,7 @@ Elevator simulation system built with Java 25 LTS.
 
 ## Building
 
-```bash
+```bash 
 mvn clean compile
 ```
 

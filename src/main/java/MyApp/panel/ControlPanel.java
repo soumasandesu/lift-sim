@@ -9,7 +9,8 @@ import MyApp.misc.ElevatorStatus;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowEvent;
-import java.util.LinkedList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -47,7 +48,10 @@ public class ControlPanel implements Panel {
             while (true) {
                 this.building.getElevatorStatus().stream().sorted().forEach(this::updateElevatorStatus);
                 this.building.getElevators().stream().sorted().forEach(this::updateElevatorQueue);
-                this.building.getKiosks().stream().sorted().forEach(this::updateKioskQueue);
+                this.building.getKiosks()
+                   .stream()
+                   .sorted(Comparator.<Kiosk, Double>comparing(k -> k.getFloor().getYPosition()).reversed())
+                   .forEach(this::updateKioskQueue);
 
                 try {
                     Thread.sleep(statusRefreshMiliseconds);
@@ -215,15 +219,13 @@ public class ControlPanel implements Panel {
             return;
         }
 
-        LinkedList<String> queueStrs = new LinkedList<>();
-
-        kiosk.getDestinationQueue().forEach((e, fs) -> {
-            String floorsStr = String.join(", ", fs.stream().map(Floor::getName).collect(Collectors.toList()));
-
-            queueStrs.add(
-                    String.format("%s: [%s]", e.getID(), floorsStr)
-            );
-        });
+        final List<String> queueStrs = kiosk.getDestinationQueue()
+           .entrySet()
+           .stream()
+           .map(e -> String.format("%s: [%s]",
+              e.getKey().getID(),
+              e.getValue().stream().map(Floor::getName).collect(Collectors.joining(", "))))
+           .toList();
 
         labels.y.setText(
                 String.join(", ", queueStrs)

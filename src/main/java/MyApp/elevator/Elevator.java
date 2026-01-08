@@ -9,10 +9,13 @@ import java.util.Collections;
 
 import MyApp.building.Building;
 import MyApp.kiosk.Kiosk;
+import lombok.extern.slf4j.Slf4j;
+
 
 /**
  * Represents an vertical-moving elevator used on a real life.
  */
+@Slf4j
 public class Elevator extends AppThread implements Comparable<Elevator> {
     /**
      * This is count number of elevator. Also for building getElevatorQueueString() to get no. of elevator
@@ -212,16 +215,16 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
         // set this elevator may serve any direction if both jobs are done
         // switch direction if same direction has no jobs to work on
         if (servingDirection == 0) {
-            if (missionQueueUpward.size() > 0) {
+            if (!missionQueueUpward.isEmpty()) {
                 servingDirection = 1;
-            } else if (missionQueueDownward.size() > 0) {
+            } else if (!missionQueueDownward.isEmpty()) {
                 servingDirection = -1;
             }
             return;
-        } else if (missionQueueUpward.size() == 0 && missionQueueDownward.size() == 0){
+        } else if (missionQueueUpward.isEmpty() && missionQueueDownward.isEmpty()){
             servingDirection = 0;
             return;
-        } else if ((servingDirection > 0 && missionQueueUpward.size() == 0) || (servingDirection < 0 && missionQueueDownward.size() == 0)) {
+        } else if ((servingDirection > 0 && missionQueueUpward.isEmpty()) || (servingDirection < 0 && missionQueueDownward.isEmpty())) {
             servingDirection = -servingDirection;
         }
 
@@ -301,7 +304,7 @@ public class Elevator extends AppThread implements Comparable<Elevator> {
             final int timerID = Timer.setTimer(id, updateWaitDuration);
             final Msg msg = mbox.receive();
 
-            if (!msg.getSender().equals("Timer"))
+            if (!msg.sender().equals("Timer"))
                 break;
 
             try {
